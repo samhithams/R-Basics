@@ -1,0 +1,112 @@
+---
+title: "Assignment 3 and 4 and 5"
+output:
+  html_document:
+    df_print: paged
+---
+
+ 
+
+```{r}
+rm (list = ls(all.names = TRUE))
+```
+
+
+```{r}
+library(readxl)
+CG <- read_excel("CollegeGrads.xlsx", skip=2)
+names(CG)
+str(CG)
+typeof(CG)
+```
+
+```
+`When we examine the excel file and running the str() function we see there are 50 rows and 11 coulumns. There seems to be no missing data in each column, except the State column which is a character data type all the others are numeric data type. The State column has data with abbreviated state names.The last four columns have binary values indicating with 0 or 1, the type of the data frame is a list, as all the columns can be of different data type and same length.
+```
+```{r}
+summary(CG)
+```
+
+
+```{r}
+#library(ggplot2)
+#library (tidyverse)
+#ggplot(CG, aes(State, "Dropout%")) + geom_bar(stat = "identity", color ="yellow") + labs (title = "Dropout bar graph by State")
+```
+
+
+```{r}
+library(dplyr)
+CG %>%
+  arrange(desc(CG$`ColGrad%`)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+library(dplyr)
+CG %>%
+  arrange(desc(CG$`Dropout%`)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+library(dplyr)
+CG%>%
+  arrange(desc(CG$EdSpend)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(CG$`ColGrad%`), main = "College Graduation rate", ylab ="Frequency")
+plot(density(CG$`Dropout%`), main = "College Dropout rate", ylab ="Frequency")
+plot(density(CG$EdSpend), main = "College Education Spend", ylab ="Frequency")
+```
+
+Statistical information from summary() analyses patterns in the data and for better understanding. Then when we calculated top n we used functions such as arrange() for college graduation rate, dropout-rate in descending and group_by() where we grouped it by State. Here we saw the precedence State column even after sorting the 'ColGrad%' column. We used slice() to output the first 10 rows. Next we mapped density plots for various columns calculating bandwidth of each of them. 
+```{r}
+str(CG)
+```
+
+
+```{r}
+CGsubset <- subset (CG, select = c("ColGrad%", "Dropout%", "EdSpend"))
+str(CGsubset)
+```
+
+
+```{r}
+CGcorr <- round(cor(CGsubset, use = "complete.obs"),2)
+CGcorr
+```
+
+
+```{r}
+#scatter.smooth(CGsubset$`ColGrad%`, CGsubset$EdSpend, col = "red")
+#alternate method for scatter plot
+plot(CGsubset$`ColGrad%`, CGsubset$EdSpend, col = "brown",cex =2, xlab = "College grad %", ylab = "Education spend", panel.first = lines(lowess(CGsubset$`ColGrad%`, CGsubset$EdSpend), lty = "solid",lwd=2))
+text(paste("Correlation is: ", round(cor(CGsubset$`ColGrad%`, CGsubset$EdSpend),2)), x=30, y = 1500)
+```
+
+
+```{r}
+plot(CGsubset$`Dropout%`, CGsubset$EdSpend, col = "red", xlab = "Dropout  %", ylab = "Education spend", panel.first = lines(lowess(CGsubset$`Dropout%`, CGsubset$EdSpend), lty = "solid"))
+text(paste("Correlation is: ", round(cor(CGsubset$`Dropout%`, CGsubset$EdSpend),2)), x=20, y = 1500)
+```
+
+
+```{r}
+library(ggplot2)
+library(stats)
+qplot(CGsubset$`ColGrad%`,CGsubset$EdSpend )+ stat_smooth(method = "lm")
+
+```
+
+After creating subsets of the College Grad data, we can examine behavior all the variables. Let's consider our primary variable to be Education spend per-capita, the coefficients values of respective college grad percent is 0.48 and dropout rate is -0.32. This means that, as education spending increases the possibility of college graduation also increases, a positive correlation and directly related and proportional. And as Dropout % is negative with education spend, as the education spend decreases the possibility of dropping out increases, a negative correlation and inversely proportional.
+As the plotting indicates, an upward line for positive correlation indicating directly proportions between education spend and College graduation rate  and downward projection for negative relationship.
