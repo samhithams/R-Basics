@@ -1,0 +1,146 @@
+---
+title: "Final Project"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r}
+rm(list = ls(all.names=TRUE))
+setwd("C:/Users/samhitha/Desktop/R")
+```
+
+
+```{r}
+#1,2,3,4
+WE <- read_excel("WorldEconomicData.xlsx")
+names(WE)
+str(WE)
+attach(WE)
+```
+
+
+```{r}
+head(WE)
+tail(WE)
+```
+
+
+```{r}
+#5
+summary(WE)
+```
+
+
+```{r}
+miss_dat = WE %>% is.na() %>% colSums()
+miss_dat
+```
+
+
+```{r}
+#checking missing data and substituting with median values of the respective columns
+miss_cols = miss_dat[miss_dat > 0 ] %>% names()
+miss_cols = miss_cols[miss_cols != 'GDP per capita (constant 2010 US$)']
+WE = WE[complete.cases(WE[,c('GDP per capita (constant 2010 US$)')]),]
+for (col in miss_cols){
+  WE [col][is.na(WE[col])] <- median (WE[[col]], na.rm = TRUE)
+}
+WE
+```
+
+
+```{r}
+#6 Density plots
+num_col = names(unlist(lapply(WE,is.numeric))[unlist(lapply(WE,is.numeric)) == TRUE])
+num_col = num_col[!(num_col %in% c('GDP per capita (constant 2010 US$)','Human capital index (HCI) (scale 0-1)'))]
+WE [ num_col] = WE [num_col] %>% scale()
+for (cols in num_col){
+  density_plot = density(WE[[cols]])
+  plot(density_plot, col ="red", main = paste("Density plot for",cols))
+}
+```
+
+
+```{r}
+wecor <- round(cor(WE[num_col], use = "complete.obs"),2)
+wecor
+```
+When we consider each of the variables we can find a correlation between them, for Age dependency ratio highest positive correlation with Population growth of 0.64,this makes sense as population increases the number of people moving to add economic value increases. But GDP per capita has a negative relation of coefficient -0.12.
+
+Consumer Price Index has the highest correlation to the GDP growth annually of 0.34, as the consumer prices of a representative goods increase the GDP also grows year-over-year.
+CPI is behaving in a negative correlation with GDP per capita with coefficient of -0.39, indicating as the CPI increases, the GDP per capita which measures each person in the population's economic output decreases.
+
+GDP growth annually is highly correlated with GNI annual growth, this is likely as the only difference is GNI calculates incomes of foreign and domestic incomes of citizens. GDP growth is also highly correlated to the Population growth rate, indicating GDP will increase as population rate increases.
+GDP per capita has very little correlation , of 0.03, GDP per capita is more dependent on the population with economic value of the country.
+
+GNI is Gross Net Income, this inevitably will have great correlation with Urban population, Labor force because most income of the country is through the labor force. GNI growth is positively correlated to the age dependecy ratio, GDP growth and Consumer price index as this measures only the growth aspect of GNI, GNI per capita has inverse relationship with population and a strong positive relation with GDP per capita.
+
+Labor force has 0.99 coefficient value for Urban Population meaning high correlation and labor force is concentrated more in the urban areas. GDP per capita has a negative coefficient, as GDP per capita is GDP divided by the population of the country.
+
+
+```{r}
+#7 correlation between GDP per capita vs all the variables
+cor_WE = round(cor(WE[c(num_col, c("GDP per capita (constant 2010 US$)"))]),2)
+cor_WE
+```
+GDP per capita is positively related to GNI per capita with a coefficient value of 0.58 and 'Ratio of female to male labor force participation rate' with a value of 0.35. It is negatively related to the Consumer price index indicating as prices paid by citizens decreases, the GDP per capita will increase.
+
+```{r}
+ModelLM = lm(WE$`GDP per capita (constant 2010 US$)`~ WE$`GNI per capita (constant 2010 US$)`)
+summary(ModelLM)
+plot(ModelLM)
+```
+The linear regression between GDP per capita and GNI per capita have the following intercepts , the equation would be y = 21457 + x*14162, for every x value of GNI per capita. 34% of variation in the GDP per capita can be explained by GNI per capita values. The plots of them for linearity is not exactly a straight line but it is very close to the ideal dotted line. Normality is not along lines as well due to outliers,homoscedstacity is also showing constant variation.
+```{r}
+ModelLM2 = lm(WE$`GDP per capita (constant 2010 US$)`~ WE$`Consumer price index (2010 = 100)`)
+summary(ModelLM2)
+plot(ModelLM2)
+```
+Linear regression between GDP per capita and Consumer price index has intercept of 21457, the equation would be y = 21457 + x *(-9511) for each x value of Consumer index. Linearity, Normality show a lot of variation from the take on the graphs, variance of the residuals is also not constant for each value.  Only 15% of variation is explained by consumer index.
+
+
+```{r}
+ModelLM3 <- lm(WE$`GDP per capita (constant 2010 US$)`~ WE$`Ratio of female to male labor force participation rate (%) (national estimate)`)
+summary(ModelLM3)
+plot(ModelLM3)
+```
+Equation would look like, y = 21457 +x*8469 for each x value of ratio of female to male, only 12% of variation in GDP per capita is explained by the male female ratio. The graphs for linearity between variables is not a straight horizontal line and for normality the values closer to the ideal value. There is also heteroscedasticity observed.
+
+```{r}
+Modelall <- lm(WE$`GDP per capita (constant 2010 US$)`~ WE$`GNI per capita (constant 2010 US$)`+ WE$`Ratio of female to male labor force participation rate (%) (national estimate)`+WE$`Consumer price index (2010 = 100)`)
+summary(Modelall)
+plot(Modelall)
+```
+The equation is , y = 21457 + 11511*(GNI per capita)+4912 *(Ratio of femal male..) + (-6578*Consumer price index)
+GDP per capita is defining economy value of every individual of the country, there are many aspects that can act as predictors like GDP, GNI, population. GNI in particular is the Gross Net Income including individuals in foreign soil. As we saw from linear and multiple linear regression, population with GDP has a negative inclination which is ideal as GDP per capita itself is GDP/Population. 
+Coming to our models, ratio between male and female, consumer price index and GNI per capita are great predictors of GDP per capita, consumer index has an inverse relationship with GDP per capita, the correlation has a negative value, the linear regression also does the same. Ratio between male and female labor force also explains GDP because, labor force in turn adds to GDP and GDP per capita. 
+Predicting GDP per capita individually these 3 variables are adding lesser value, but in combination of them, the R-squared is 45%, thats 45% prediction of variation in GDP per capita directly linking to these 3 variables.
+We can use inferential analytics, predictive models in these lenghts to extract utmost usefulness from the linear regression, multiple linear regression and correlation models, functions, plots in R
+
+```{r}
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
