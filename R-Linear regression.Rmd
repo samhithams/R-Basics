@@ -1,0 +1,141 @@
+---
+title: "Assignment 6"
+output:
+  html_document:
+    df_print: paged
+---
+
+ 
+
+```{r}
+rm (list = ls(all.names = TRUE))
+```
+
+
+```{r}
+library(readxl)
+CG <- read_excel("CollegeGrads.xlsx", skip=2)
+names(CG)
+str(CG)
+typeof(CG)
+```
+
+```
+`When we examine the excel file and running the str() function we see there are 50 rows and 11 coulumns. There seems to be no missing data in each column, except the State column which is a character data type all the others are numeric data type. The State column has data with abbreviated state names.The last four columns have binary values indicating with 0 or 1, the type of the data frame is a list, as all the columns can be of different data type and same length.
+```
+```{r}
+attach(CG)
+summary(CG)
+```
+
+
+```{r}
+library(ggplot2)
+library (tidyverse)
+ggplot(CG, aes(State, "Dropout%")) + geom_bar(stat = "identity", color ="yellow") + labs (title = "Dropout bar graph by State")
+```
+
+
+```{r}
+library(dplyr)
+CG %>%
+  arrange(desc(CG$`ColGrad%`)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+library(dplyr)
+CG %>%
+  arrange(desc(CG$`Dropout%`)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+library(dplyr)
+CG%>%
+  arrange(desc(CG$EdSpend)) %>%
+  group_by(CG$State) %>%
+  slice(1:10)
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(CG$`ColGrad%`), main = "College Graduation rate", ylab ="Frequency")
+plot(density(CG$`Dropout%`), main = "College Dropout rate", ylab ="Frequency")
+plot(density(CG$EdSpend), main = "College Education Spend", ylab ="Frequency")
+```
+
+Statistical information from summary() analyses patterns in the data and for better understanding. Then when we calculated top n we used functions such as arrange() for college graduation rate, dropout-rate in descending and group_by() where we grouped it by State. Here we saw the precedence State column even after sorting the 'ColGrad%' column. We used slice() to output the first 10 rows. Next we mapped density plots for various columns calculating bandwidth of each of them. 
+```{r}
+str(CG)
+```
+
+
+```{r}
+CGsubset <- subset (CG, select = c("ColGrad%", "Dropout%", "EdSpend"))
+str(CGsubset)
+```
+
+
+```{r}
+CGcorr <- round(cor(CGsubset, use = "complete.obs"),2)
+CGcorr
+```
+
+
+```{r}
+#scatter.smooth(CGsubset$`ColGrad%`, CGsubset$EdSpend, col = "red")
+#alternate method for scatter plot
+plot(CGsubset$`ColGrad%`, CGsubset$EdSpend, col = "brown",cex =2, xlab = "College grad %", ylab = "Education spend", panel.first = lines(lowess(CGsubset$`ColGrad%`, CGsubset$EdSpend), lty = "solid",lwd=2))
+text(paste("Correlation is: ", round(cor(CGsubset$`ColGrad%`, CGsubset$EdSpend),2)), x=30, y = 1500)
+```
+
+
+```{r}
+plot(CGsubset$`Dropout%`, CGsubset$EdSpend, col = "red", xlab = "Dropout  %", ylab = "Education spend", panel.first = lines(lowess(CGsubset$`Dropout%`, CGsubset$EdSpend), lty = "solid"))
+text(paste("Correlation is: ", round(cor(CGsubset$`Dropout%`, CGsubset$EdSpend),2)), x=20, y = 1500)
+```
+After creating subsets of the College Grad data, we can examine behavior all the variables. Let's consider our primary variable to be Education spend per-capita, the coefficients values of respective college grad percent is 0.48 and dropout rate is -0.32. This means that, as education spending increases the possibility of college graduation also increases, a positive correlation and directly related and proportional. And as Dropout % is negative with education spend, as the education spend decreases the possibility of dropping out increases, a negative correlation and inversely proportional.
+As the plotting indicates, an upward line for positive correlation indicating directly proportions between education spend and College graduation rate  and downward projection for negative relationship.
+
+```{r}
+#Assignment 6
+Model1 <- lm(`ColGrad%`~EdSpend, data = CGsubset)
+summary(Model1)
+plot(Model1)
+```
+The linear regression analysis between graduation rate and education amount spent shows median -0.099 very close to zero indicating equal distribution , intercept is 13.90 the equation will be y= 13.90 +0.008*x for each value of EdSpend variable. Standard error is 3.46 which is considerably alright. Multiple R-squared value shows 23% variation in Graduation rate can be directly explained by the Education amount Spent which is a good sign for the model.
+The linear relationship is shown in Fitted v Residual that follows a close parallel line to the ideal horizontal line, the normal distribution is depicted in Normal Q-Q plot which is also a straight line increment normally except outlier values at the start and end of the line. Homoscedasticity is explained in the 3rd plot, which is not exactly a horizontal line but increments at 26 till 29 and then follows constant value. Some of the outliers are 50, 7,13 depicted in the last plot. 
+For a better fit for the model, we can remove outliers, maintain homoscedastacity.
+```{r}
+Model2 <- lm(`ColGrad%`~ `Dropout%`, data = CGsubset)
+summary(Model2)
+plot(Model2)
+```
+This is a linear regression analysis between College grad percent and Drop out percent, this is predicting college graduation percent(outcomes) through the dropout percentage(Predictors). We see the median is maintained at -0.987 , close to 0 but not as much as Edspend variable v colGrad%. The intercept is 35.55, the equation will be y = 35.55 + (-0.644 * x) for every Dropout% value. 24% of variation in College graduation rate can be explained by the rate of Droputs rate according to this data. Saying that, there is also the fact that the dataset we have considered is limited.
+Linear relationship between variables seems follow the intended straight horizontal line but increased upward in the middle around percent 27, and then follows a straight line.Overall it does have a strong linear relationship.The normality on the other hand is not constant and is varying through out, but not with a great difference. Homoscedasticity , constant variance of the residuals has a constant decrease till 26, dips down and varies up and down till the end of the line. This indicates that variance is not constant, it is depicting heteroscedasticity. Influential points are 5, 50, 48 and even here there is no constant plot seen.
+```{r}
+Model3 <- lm(`ColGrad%`~ EdSpend+`Dropout%`, data = CGsubset)
+summary(Model3)
+plot(Model3)
+```
+Intercept is 23.69 for the multiple linear regression of dependent variable College graduation percent, the formula can be written as 23.69 + (0.0063*Edspend) + (-0.490*Dropout%) for every value of x.
+Standard error is 4.54, t-value 5.2, we know as the t-value increased, the error is lesser. Multiple R-squared depicts 36% of college grad rate is explained with a combination of Education amount spent and dropout rate.
+Fitted v Residuals has a closer value at the mid values and varies after 32, explains linear relationship. Normality behaves almost same with some values not in line, the graph is a straight line and gradually increases exponentially till valu at the vale 30 and maintains the same further.
+Homoscadesticity  is also not a straight line but a constant increment puts the  residuals value has increased. Some outliers are 48,50 and 5, this plot has the best fit, close to the horizontal line.
+```{r}
+
+```
+Comparing Model3 to Model1 
+
+Lets compare the standard errors of Model3 and Model1, we can see the Residual standard error is more as 4.515 for Model1 but Model3 has 4.17. This error implies how much error would there be in the prediction.
+Multiple R2 of Model1 is 0.23 or 23% of College grad% is explained by the Education money spent, Model3 has the higher percent for R2 of 36% as the combination of independent variable is a better model fit for the data considered. F-statistics for Model1 is 14.74 while Model3 has 13.22, higher the value of F-statistic we can say the null hypothesis is not accepted.
+Plots of Residuals v Fitted suggests linear relationship in Model1 between variables have greater linearity compared to Model3 due to variations, in Model3 for values around 25 seems to have a non-linear increase. Normality plots of Model1 has closer relationship tip-toeing around the ideal red dotted line while Model3 has some points which are not in proximity to the red dotted line. Constant variance by plot3 of both models do not have a linear line, meaning there are some non-constant values in both models.
+
+Comparing Model3 and Model2
+Model3 has residual standard error as 4.17,Model2 has 4.49; the lesser the error the lesser deviation from the true regression line. Model3 has lower residual error, it has lesser error while fitting the line.Multiple R2 value is also greater in Model3 with 36% variation predicted by both dropout rate and education amount spent, but only considering the dropout rate gives 24% of variation analysis.Model2 has a maintained linear relationships except a brief increase in the middle, comparing to the Model3, both the tails have varied increase and decrease values respectively. Linearity between dropout rate and college grad rate is much linear than Model3. Normality is not linear for Model3 , due to outliers , that said values are very close to the straight line function. The same holds good for Model2 as well. Model2 and Model3 both do not have constant variance throughout, outliers and influential points are in both the models. But Model3 has a much linear curve compared to the Model2.
